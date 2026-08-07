@@ -3,7 +3,7 @@ resource "aws_s3_bucket" "this" {
 
   tags = merge(var.tags, {
     environment = var.environment
-    managed_by  = "terraform"
+    managed_by  = "terraform-ak"
   })
 }
 
@@ -33,3 +33,4 @@ resource "aws_s3_bucket_public_access_block" "this" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
