@@ -1,0 +1,52 @@
+name: Terraform CD
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'environments/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write   # required for OIDC auth to AWS
+
+env:
+  TF_WORKING_DIR: environments/dev
+  AWS_REGION: ap-south-1
+
+jobs:
+  terraform-apply:
+    name: Checkout, Init, Plan, Apply
+    runs-on: ubuntu-latest
+    environment: dev   # optional: gives you a manual-approval gate in GitHub
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          # role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          # aws-region: ${{ env.AWS_REGION }}
+          # # Alternative if you're not using OIDC yet (less secure, static keys):
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.7.5"
+
+      - name: Terraform Init
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform init
+
+      - name: Terraform Plan (optional, saved for apply)
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform plan -no-color -input=false -out=tfplan
+
+      - name: Terraform Apply
+        working-directory: ${{ env.TF_WORKING_DIR }}
+        run: terraform apply -auto-approve -input=false tfplan
